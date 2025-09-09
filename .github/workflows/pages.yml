@@ -1,53 +1,35 @@
-name: Deploy to GitHub Pages
+name: Deploy Static Site to Pages
 
 on:
-  # mainブランチへのプッシュ時に実行
   push:
-    branches: [ main ]
-  
-  # 手動実行も可能
+    branches: [ "main" ]
   workflow_dispatch:
 
-# GitHub Pagesにデプロイするための権限設定
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# 同時実行を防ぐ
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # ビルドとデプロイジョブ
   deploy:
-    runs-on: ubuntu-latest
-    
-    # GitHub Pages environment を設定
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         
       - name: Setup Pages
-        id: pages
         uses: actions/configure-pages@v4
-        
-      - name: Build site
-        run: |
-          # 静的サイトなので特別なビルドは不要
-          # ファイルの存在確認
-          ls -la
-          echo "Site ready for deployment"
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # ルートディレクトリをそのままアップロード
           path: '.'
           
       - name: Deploy to GitHub Pages
