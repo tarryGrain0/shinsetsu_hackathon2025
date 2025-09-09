@@ -129,6 +129,7 @@ fetch(ROOM_URL, { method: 'HEAD' }).then(r => {
 
 // --- Avatar: GLBモデル ---
 let SPHERE_R = 0.5; // アバターの半径（衝突判定用）
+let avatarRotation = 0; // アバターの向き（ラジアン）
 const avatar = new THREE.Group(); // GLBを格納するグループ
 avatar.position.set(0, SPHERE_R, 0);
 scene.add(avatar);
@@ -262,6 +263,7 @@ const WALK = 3.0;     // m/s
 const RUN = 5.6;     // m/s
 const GRAVITY = 18.0; // 簡易重力
 const JUMP_V = 8.0;   // ジャンプ初速
+const ROTATION_SPEED = 3.0; // アバターの回転速度 (rad/s)
 let vY = 0;           // 垂直速度
 
 const up = new THREE.Vector3(0, 1, 0);
@@ -339,6 +341,15 @@ function animate() {
     const allowed = willHitWall(new THREE.Vector3(avatar.position.x, avatar.position.y, avatar.position.z), move, step);
     avatar.position.addScaledVector(move, allowed);
   }
+  
+  // 矢印キーでアバターを回転
+  if (keys['ArrowLeft']) {
+    avatarRotation += ROTATION_SPEED * dt;
+  }
+  if (keys['ArrowRight']) {
+    avatarRotation -= ROTATION_SPEED * dt;
+  }
+  avatar.rotation.y = avatarRotation;
 
   // 3) ジャンプ・重力 + 地面スナップ（GLB床）
   const gy = groundHeightAt(avatar.position.x, avatar.position.z);
