@@ -1,9 +1,12 @@
-name: Deploy to GitHub Pages
+# このワークフローは一時的に無効化されています
+# 権限エラーのため手動デプロイを使用
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+# name: Deploy to GitHub Pages
+
+# on:
+#   push:
+#     branches: [ main ]
+#   workflow_dispatch:
 
 # シンプルな権限設定
 permissions:

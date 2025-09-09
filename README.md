@@ -30,16 +30,27 @@ Three.jsを使用した3D空間探索アプリケーションです。赤い球�
 
 ## 🚀 デプロイ
 
-### GitHub Pages
-このプロジェクトはGitHub Actionsを使用して自動デプロイされます。
+### 手動デプロイ（推奨）
+GitHub Actions の権限エラーを回避するため、手動デプロイスクリプトを使用：
 
-1. **自動デプロイ**: `main`ブランチへのプッシュ時に自動実行
-2. **手動デプロイ**: GitHubリポジトリの「Actions」タブから手動実行可能
+```bash
+# 簡単な手動デプロイ
+./deploy.sh
+```
 
-### デプロイ設定
-- ワークフロー: `.github/workflows/deploy.yml`
-- デプロイ先: GitHub Pages
-- URL: `https://[ユーザー名].github.io/shinsetsu_hackathon2025/`
+### GitHub Pages設定
+1. GitHubリポジトリの「Settings」→「Pages」
+2. 「Source」で「Deploy from a branch」を選択
+3. 「Branch」で「gh-pages」を選択
+4. 「Save」をクリック
+
+### 自動デプロイ（オプション）
+GitHub Actions が利用可能な場合：
+- ワークフロー: `.github/workflows/deploy.yml` (現在無効化)
+- 権限設定後に有効化可能
+
+### デプロイURL
+`https://tarryGrain0.github.io/shinsetsu_hackathon2025/`
 
 ## 🚀 セットアップ
 
