@@ -515,4 +515,306 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// --- 設定管理システム ---
+const SETTINGS_KEY = 'three-room-explorer-settings';
+
+// デフォルト設定
+const defaultSettings = {
+  graphics: {
+    quality: 'medium',
+    shadows: true,
+    antialiasing: true,
+    fov: 75
+  },
+  ui: {
+    showFPS: true,
+    showControls: true,
+    showHelpers: true,
+    showStatus: true
+  }
+};
+
+// 現在の設定
+let currentSettings = { ...defaultSettings };
+
+// LocalStorageから設定を読み込み
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    if (saved) {
+      currentSettings = { ...defaultSettings, ...JSON.parse(saved) };
+      applySettings();
+    }
+  } catch (e) {
+    console.error('設定の読み込みに失敗:', e);
+  }
+}
+
+// LocalStorageに設定を保存
+function saveSettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(currentSettings));
+  } catch (e) {
+    console.error('設定の保存に失敗:', e);
+  }
+}
+
+// 設定を適用
+function applySettings() {
+  // グラフィック設定の適用
+  applyGraphicsSettings();
+  
+  // UI設定の適用
+  applyUISettings();
+  
+  // フォームの値を更新
+  updateSettingsForm();
+}
+
+// グラフィック設定を適用
+function applyGraphicsSettings() {
+  const { quality, shadows, antialiasing, fov } = currentSettings.graphics;
+  
+  // 品質設定によるpixelRatio調整
+  switch (quality) {
+    case 'low':
+      renderer.setPixelRatio(1.0);
+      if (dir.shadow) {
+        dir.shadow.mapSize.set(512, 512);
+      }
+      break;
+    case 'medium':
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      if (dir.shadow) {
+        dir.shadow.mapSize.set(1024, 1024);
+      }
+      break;
+    case 'high':
+      renderer.setPixelRatio(window.devicePixelRatio);
+      if (dir.shadow) {
+        dir.shadow.mapSize.set(2048, 2048);
+      }
+      break;
+  }
+  
+  // シャドウ設定
+  renderer.shadowMap.enabled = shadows;
+  
+  // アンチエイリアシング（再作成が必要な場合は警告）
+  // 注: WebGLRendererのantialias設定は初期化時のみ有効
+  
+  // FOV設定
+  camera.fov = fov;
+  camera.updateProjectionMatrix();
+}
+
+// UI設定を適用
+function applyUISettings() {
+  const { showFPS, showControls, showHelpers, showStatus } = currentSettings.ui;
+  
+  // FPS表示
+  const fpsEl = document.getElementById('fps');
+  if (fpsEl) fpsEl.style.display = showFPS ? 'block' : 'none';
+  
+  // 操作ガイド表示
+  const uiEl = document.getElementById('ui');
+  if (uiEl) uiEl.style.display = showControls ? 'block' : 'none';
+  
+  // デバッグヘルパー表示
+  helpersVisible = showHelpers;
+  toggleHelpers();
+  
+  // ステータス表示
+  const statusEl = document.getElementById('status');
+  if (statusEl) statusEl.style.display = showStatus ? 'block' : 'none';
+}
+
+// 設定フォームの値を更新
+function updateSettingsForm() {
+  // グラフィック設定
+  const qualityEl = document.getElementById('quality');
+  if (qualityEl) qualityEl.value = currentSettings.graphics.quality;
+  
+  const shadowsEl = document.getElementById('shadows');
+  if (shadowsEl) shadowsEl.checked = currentSettings.graphics.shadows;
+  
+  const antialiasingEl = document.getElementById('antialiasing');
+  if (antialiasingEl) antialiasingEl.checked = currentSettings.graphics.antialiasing;
+  
+  const fovEl = document.getElementById('fov');
+  if (fovEl) {
+    fovEl.value = currentSettings.graphics.fov;
+    const fovValueEl = document.getElementById('fovValue');
+    if (fovValueEl) fovValueEl.textContent = currentSettings.graphics.fov;
+  }
+  
+  // UI設定
+  const showFPSEl = document.getElementById('showFPS');
+  if (showFPSEl) showFPSEl.checked = currentSettings.ui.showFPS;
+  
+  const showControlsEl = document.getElementById('showControls');
+  if (showControlsEl) showControlsEl.checked = currentSettings.ui.showControls;
+  
+  const showHelpersEl = document.getElementById('showHelpers');
+  if (showHelpersEl) showHelpersEl.checked = currentSettings.ui.showHelpers;
+  
+  const showStatusEl = document.getElementById('showStatus');
+  if (showStatusEl) showStatusEl.checked = currentSettings.ui.showStatus;
+}
+
+// 設定モーダルの初期化
+function initSettingsModal() {
+  const modal = document.getElementById('settingsModal');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const closeBtns = document.querySelectorAll('#closeModalBtn, #closeModalBtn2');
+  const resetBtn = document.getElementById('resetSettingsBtn');
+  const tabs = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  // 設定ボタンクリック
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+      modal.classList.add('active');
+    });
+  }
+  
+  // 閉じるボタン
+  closeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+  });
+  
+  // モーダル背景クリックで閉じる
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('active');
+    }
+  });
+  
+  // タブ切り替え
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.dataset.tab;
+      
+      // タブのアクティブ状態を更新
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      // タブコンテンツの表示を更新
+      tabContents.forEach(content => {
+        if (content.id === `${targetTab}-tab`) {
+          content.classList.add('active');
+        } else {
+          content.classList.remove('active');
+        }
+      });
+    });
+  });
+  
+  // リセットボタン
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      currentSettings = JSON.parse(JSON.stringify(defaultSettings));
+      applySettings();
+      saveSettings();
+    });
+  }
+  
+  // 各設定項目のイベントリスナー
+  
+  // グラフィック設定
+  const qualityEl = document.getElementById('quality');
+  if (qualityEl) {
+    qualityEl.addEventListener('change', (e) => {
+      currentSettings.graphics.quality = e.target.value;
+      applyGraphicsSettings();
+      saveSettings();
+    });
+  }
+  
+  const shadowsEl = document.getElementById('shadows');
+  if (shadowsEl) {
+    shadowsEl.addEventListener('change', (e) => {
+      currentSettings.graphics.shadows = e.target.checked;
+      applyGraphicsSettings();
+      saveSettings();
+    });
+  }
+  
+  const antialiasingEl = document.getElementById('antialiasing');
+  if (antialiasingEl) {
+    antialiasingEl.addEventListener('change', (e) => {
+      currentSettings.graphics.antialiasing = e.target.checked;
+      // 注: アンチエイリアシングの変更にはレンダラーの再作成が必要
+      alert('アンチエイリアシング設定の変更は、ページをリロード後に反映されます。');
+      saveSettings();
+    });
+  }
+  
+  const fovEl = document.getElementById('fov');
+  if (fovEl) {
+    fovEl.addEventListener('input', (e) => {
+      currentSettings.graphics.fov = parseInt(e.target.value);
+      const fovValueEl = document.getElementById('fovValue');
+      if (fovValueEl) fovValueEl.textContent = e.target.value;
+      applyGraphicsSettings();
+      saveSettings();
+    });
+  }
+  
+  // UI設定
+  const showFPSEl = document.getElementById('showFPS');
+  if (showFPSEl) {
+    showFPSEl.addEventListener('change', (e) => {
+      currentSettings.ui.showFPS = e.target.checked;
+      applyUISettings();
+      saveSettings();
+    });
+  }
+  
+  const showControlsEl = document.getElementById('showControls');
+  if (showControlsEl) {
+    showControlsEl.addEventListener('change', (e) => {
+      currentSettings.ui.showControls = e.target.checked;
+      applyUISettings();
+      saveSettings();
+    });
+  }
+  
+  const showHelpersEl = document.getElementById('showHelpers');
+  if (showHelpersEl) {
+    showHelpersEl.addEventListener('change', (e) => {
+      currentSettings.ui.showHelpers = e.target.checked;
+      applyUISettings();
+      saveSettings();
+    });
+  }
+  
+  const showStatusEl = document.getElementById('showStatus');
+  if (showStatusEl) {
+    showStatusEl.addEventListener('change', (e) => {
+      currentSettings.ui.showStatus = e.target.checked;
+      applyUISettings();
+      saveSettings();
+    });
+  }
+}
+
+// Gキーで設定モーダルを開く
+addEventListener('keydown', (e) => {
+  if (e.code === 'KeyG' && !e.repeat) {
+    const modal = document.getElementById('settingsModal');
+    if (modal) {
+      modal.classList.toggle('active');
+    }
+  }
+});
+
+// 初期化時に設定を読み込む
+document.addEventListener('DOMContentLoaded', () => {
+  initSettingsModal();
+  loadSettings();
+});
+
 console.log('%cTIP', 'background:#34d399;color:#111;padding:2px 6px;border-radius:6px', 'ローカルHTTPサーバーで開いてください。例: `python3 -m http.server`');
