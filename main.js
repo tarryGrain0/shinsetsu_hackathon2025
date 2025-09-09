@@ -226,8 +226,7 @@ loader.load(AVATAR_URL, (gltf) => {
 const avatarLamp = new THREE.PointLight(0xff4444, 1.2, 10);
 avatar.add(avatarLamp);
 const avatarAxes = new THREE.AxesHelper(1.2); avatar.add(avatarAxes);
-const beaconMat = new THREE.SpriteMaterial({ color: 0xff3344, transparent: true, opacity: 0.85, depthTest: false });
-const beacon = new THREE.Sprite(beaconMat); beacon.scale.set(0.8, 0.8, 0.8); beacon.position.y = SPHERE_R * 1.8; avatar.add(beacon);
+
 let helpersVisible = true;
 
 // --- Input state ---
