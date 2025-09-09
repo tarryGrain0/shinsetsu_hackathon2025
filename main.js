@@ -264,8 +264,8 @@ function animate() {
 
   // 2) 入力合成（WASD はカメラ基準）
   const move = new THREE.Vector3();
-  if (keys['KeyW']) move.add(forward);
-  if (keys['KeyS']) move.sub(forward);
+  if (keys['KeyW']) move.sub(forward);
+  if (keys['KeyS']) move.add(forward);
   if (keys['KeyA']) move.sub(right);
   if (keys['KeyD']) move.add(right);
 
