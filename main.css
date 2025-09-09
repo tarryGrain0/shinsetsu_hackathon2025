@@ -1,0 +1,51 @@
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+}
+
+#ui {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, .45);
+  color: #fff;
+  font-size: 13px;
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
+}
+
+#ui kbd {
+  background: rgba(255, 255, 255, .14);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+#fps {
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  color: #9ad6ff;
+  font: 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  opacity: .85;
+}
+
+#status {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  color: #fff;
+  background: rgba(0, 0, 0, .55);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  max-width: 60ch;
+}

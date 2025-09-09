@@ -81,14 +81,15 @@ http://localhost:8080
 ```
 shinsetsu_hackathon2025/
 ├── .github/
-│   ├── workflows/
-│   │   └── deploy.yml         # GitHub Actions デプロイ設定
-│   └── PAGES_SETUP.md         # Pages設定ガイド
-├── index.html                 # メインアプリケーション
-├── room_sample.glb            # 3Dルームモデル
-├── 404.html                   # エラーページ
-├── package.json               # プロジェクト設定
-├── .nojekyll                  # Jekyll無効化
+│   └── workflows/
+│       └── deploy.yml         # GitHub Actions デプロイ設定
+├── assets/
+│   └── room_sample.glb        # 3Dルームモデル
+├── index.html                 # アプリケーションエントリーポイント
+├── main.js                    # Three.jsメインロジック
+├── main.css                   # UIスタイリング
+├── .gitignore                 # Git除外設定
+├── CLAUDE.md                  # 開発ガイドライン
 └── README.md                  # このファイル
 ```
 
@@ -110,9 +111,9 @@ shinsetsu_hackathon2025/
 ## 🎨 カスタマイズ
 
 ### 3Dモデルの変更
-`room_sample.glb` を別のGLB/GLTFファイルに置き換えることで、異なる3D空間を探索できます。
+`assets/room_sample.glb` を別のGLB/GLTFファイルに置き換えることで、異なる3D空間を探索できます。
 
-### 設定パラメータ
+### 設定パラメータ (main.js内)
 ```javascript
 // 移動速度
 const WALK = 3.0;     // 歩行速度 (m/s)
