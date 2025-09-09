@@ -1,28 +1,39 @@
-# このワークフローは一時的に無効化されています
-# 権限エラーのため手動デプロイを使用
+name: Deploy to GitHub Pages
 
-# name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
-# on:
-#   push:
-#     branches: [ main ]
-#   workflow_dispatch:
-
-# シンプルな権限設定
+# GitHub Pages向けの権限設定
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
-          force_orphan: true
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

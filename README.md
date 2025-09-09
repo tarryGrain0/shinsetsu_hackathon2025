@@ -30,27 +30,26 @@ Three.jsを使用した3D空間探索アプリケーションです。赤い球�
 
 ## 🚀 デプロイ
 
-### 手動デプロイ（推奨）
-GitHub Actions の権限エラーを回避するため、手動デプロイスクリプトを使用：
+### 自動デプロイ
+このプロジェクトはGitHub Actionsを使用してmainブランチから直接GitHub Pagesにデプロイされます。
 
-```bash
-# 簡単な手動デプロイ
-./deploy.sh
-```
+1. **自動デプロイ**: `main`ブランチへのプッシュ時に自動実行
+2. **手動デプロイ**: GitHubリポジトリの「Actions」タブから手動実行可能
 
 ### GitHub Pages設定
-1. GitHubリポジトリの「Settings」→「Pages」
-2. 「Source」で「Deploy from a branch」を選択
-3. 「Branch」で「gh-pages」を選択
-4. 「Save」をクリック
+- **Source**: GitHub Actions
+- **ワークフロー**: `.github/workflows/deploy.yml`
+- **デプロイ元**: mainブランチ
+- **URL**: `https://tarryGrain0.github.io/shinsetsu_hackathon2025/`
 
-### 自動デプロイ（オプション）
-GitHub Actions が利用可能な場合：
-- ワークフロー: `.github/workflows/deploy.yml` (現在無効化)
-- 権限設定後に有効化可能
-
-### デプロイURL
-`https://tarryGrain0.github.io/shinsetsu_hackathon2025/`
+### デプロイ手順
+```bash
+# コードを更新
+git add .
+git commit -m "更新内容"
+git push origin main
+# → 自動的にGitHub Pagesにデプロイされます
+```
 
 ## 🚀 セットアップ
 
@@ -82,14 +81,15 @@ http://localhost:8080
 ```
 shinsetsu_hackathon2025/
 ├── .github/
-│   └── workflows/
-│       └── deploy.yml      # GitHub Actions設定
-├── index.html              # メインアプリケーション
-├── room_sample.glb         # 3Dルームモデル
-├── 404.html                # エラーページ
-├── package.json            # プロジェクト設定
-├── .nojekyll               # Jekyll無効化
-└── README.md               # このファイル
+│   ├── workflows/
+│   │   └── deploy.yml         # GitHub Actions デプロイ設定
+│   └── PAGES_SETUP.md         # Pages設定ガイド
+├── index.html                 # メインアプリケーション
+├── room_sample.glb            # 3Dルームモデル
+├── 404.html                   # エラーページ
+├── package.json               # プロジェクト設定
+├── .nojekyll                  # Jekyll無効化
+└── README.md                  # このファイル
 ```
 
 ## 🔧 技術仕様
