@@ -2,6 +2,12 @@
 
 Three.jsを使用した3D空間探索アプリケーションです。赤い球体のアバターを操作して、GLBファイルで作成されたルーム内を自由に移動できます。
 
+## 🌐 ライブデモ
+
+**GitHub Pages**: [https://tarryGrain0.github.io/shinsetsu_hackathon2025/](https://tarryGrain0.github.io/shinsetsu_hackathon2025/)
+
+> リアルタイムでアプリケーションを体験できます！
+
 ## 🎮 機能
 
 - **3Dルーム探索**: GLBファイル形式の3Dルームを読み込み、リアルタイムで探索
@@ -12,15 +18,28 @@ Three.jsを使用した3D空間探索アプリケーションです。赤い球�
 
 ## 🕹️ 操作方法
 
-| キー/操作 | 機能 |
-|-----------|------|
-| `W` `A` `S` `D` | 移動（前後左右） |
-| `Shift` + 移動キー | ダッシュ |
-| `Space` | ジャンプ |
-| マウスドラッグ | カメラ回転 |
-| ホイール | カメラ距離調整 |
-| `R` | リスポーン（中央に戻る） |
-| `H` | ヘルパー表示切替 |
+| キー/操作          | 機能                     |
+| ------------------ | ------------------------ |
+| `W` `A` `S` `D`    | 移動（前後左右）         |
+| `Shift` + 移動キー | ダッシュ                 |
+| `Space`            | ジャンプ                 |
+| マウスドラッグ     | カメラ回転               |
+| ホイール           | カメラ距離調整           |
+| `R`                | リスポーン（中央に戻る） |
+| `H`                | ヘルパー表示切替         |
+
+## 🚀 デプロイ
+
+### GitHub Pages
+このプロジェクトはGitHub Actionsを使用して自動デプロイされます。
+
+1. **自動デプロイ**: `main`ブランチへのプッシュ時に自動実行
+2. **手動デプロイ**: GitHubリポジトリの「Actions」タブから手動実行可能
+
+### デプロイ設定
+- ワークフロー: `.github/workflows/deploy.yml`
+- デプロイ先: GitHub Pages
+- URL: `https://[ユーザー名].github.io/shinsetsu_hackathon2025/`
 
 ## 🚀 セットアップ
 
@@ -51,9 +70,15 @@ http://localhost:8080
 
 ```
 shinsetsu_hackathon2025/
-├── index.html          # メインアプリケーション
-├── room_sample.glb     # 3Dルームモデル
-└── README.md           # このファイル
+├── .github/
+│   └── workflows/
+│       └── deploy.yml      # GitHub Actions設定
+├── index.html              # メインアプリケーション
+├── room_sample.glb         # 3Dルームモデル
+├── 404.html                # エラーページ
+├── package.json            # プロジェクト設定
+├── .nojekyll               # Jekyll無効化
+└── README.md               # このファイル
 ```
 
 ## 🔧 技術仕様
