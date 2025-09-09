@@ -44,15 +44,6 @@ scene.add(new THREE.AmbientLight(0xffffff, 0.15)); // 最低限の環境光
 const worldRoot = new THREE.Group();
 scene.add(worldRoot);
 
-// フォールバック地面（GLB失敗時の見やすさ向上）
-const fallbackGround = new THREE.Mesh(
-  new THREE.PlaneGeometry(120, 120),
-  new THREE.MeshStandardMaterial({ color: 0x93c47d, roughness: 1 })
-);
-fallbackGround.rotation.x = -Math.PI / 2;
-fallbackGround.receiveShadow = true;
-scene.add(fallbackGround);
-
 const staticMeshes = []; // 当たり判定・地面判定対象
 let worldBBox = null; // ルーム全体のBBox
 let worldLoaded = false; // GLB読込完了フラグ
@@ -81,7 +72,6 @@ loader.load(ROOM_URL, (gltf) => {
   });
   worldRoot.add(room);
   worldLoaded = true;
-  fallbackGround.visible = false;
   statusEl.textContent = 'room_sample.glb: loaded';
 
   // --- BBox からスケール・中心・床を推定
@@ -137,27 +127,53 @@ fetch(ROOM_URL, { method: 'HEAD' }).then(r => {
   statusEl.textContent = `Fetch error for room_sample.glb: ${e}`;
 });
 
-// ランドマーク（カラフルな箱をいくつか）
-const palette = [0xff7675, 0x74b9ff, 0x55efc4, 0xfdcb6e, 0xa29bfe, 0xffb4a2];
-const boxGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
-for (let i = 0; i < 18; i++) {
-  const mat = new THREE.MeshStandardMaterial({ color: palette[i % palette.length], roughness: 0.8 });
-  const b = new THREE.Mesh(boxGeo, mat);
-  b.castShadow = true; b.receiveShadow = true;
-  const r = 30 + Math.random() * 90; const t = Math.random() * Math.PI * 2;
-  b.position.set(Math.cos(t) * r, 0.6, Math.sin(t) * r);
-  scene.add(b);
-}
-
-// --- Avatar: 赤い球体 ---
-let SPHERE_R = 0.5;
-const avatar = new THREE.Mesh(
-  new THREE.SphereGeometry(SPHERE_R, 32, 16),
-  new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.5, metalness: 0.0, emissive: 0x220000, emissiveIntensity: 0.25 })
-);
-avatar.castShadow = true;
+// --- Avatar: GLBモデル ---
+let SPHERE_R = 0.5; // アバターの半径（衝突判定用）
+const avatar = new THREE.Group(); // GLBを格納するグループ
 avatar.position.set(0, SPHERE_R, 0);
 scene.add(avatar);
+
+// アバターGLBの読み込み
+const AVATAR_URL = new URL('./assets/avatar.glb', import.meta.url).href;
+loader.load(AVATAR_URL, (gltf) => {
+  const avatarModel = gltf.scene;
+  avatarModel.traverse((o) => {
+    if (o.isMesh) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+    }
+  });
+  
+  // アバターのサイズ調整（必要に応じて）
+  const avatarBBox = new THREE.Box3().setFromObject(avatarModel);
+  const avatarSize = avatarBBox.getSize(new THREE.Vector3());
+  const avatarHeight = avatarSize.y;
+  
+  // 高さを基準にスケール調整（1メートルに正規化）
+  const desiredHeight = 1.0;
+  const scale = desiredHeight / avatarHeight;
+  avatarModel.scale.setScalar(scale);
+  
+  // 位置調整（足が地面につくように）
+  avatarModel.position.y = -SPHERE_R;
+  
+  avatar.add(avatarModel);
+  console.log('Avatar loaded successfully');
+}, (e) => {
+  if (e && e.total) {
+    const p = (e.loaded / e.total * 100).toFixed(0);
+    console.log(`Loading avatar.glb… ${p}%`);
+  }
+}, (err) => {
+  console.error('Avatar GLB load error:', err);
+  // フォールバック: 赤い球体を表示
+  const fallbackAvatar = new THREE.Mesh(
+    new THREE.SphereGeometry(SPHERE_R, 32, 16),
+    new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.5 })
+  );
+  fallbackAvatar.castShadow = true;
+  avatar.add(fallbackAvatar);
+});
 
 // 目印：プレイヤーにビコン＆ライト＆座標軸
 const avatarLamp = new THREE.PointLight(0xff4444, 1.2, 10);
