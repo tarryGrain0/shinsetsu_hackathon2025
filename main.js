@@ -154,8 +154,10 @@ deskPositions.forEach((pos, index) => {
     const deskBBox = new THREE.Box3().setFromObject(desk);
     const deskSize = deskBBox.getSize(new THREE.Vector3());
     
-    // アバターより小さくスケール調整（高さ0.3mくらいに）
-    const targetHeight = 0.3;
+    // カメラの高さの半分より少し高いくらいに調整
+    // カメラの高さ = SPHERE_R * 2.5 = 0.5 * 2.5 = 1.25m
+    // その半分より少し高い = 約0.7m
+    const targetHeight = 0.7;
     const currentHeight = deskSize.y;
     const scale = targetHeight / currentHeight;
     desk.scale.setScalar(scale);
@@ -181,6 +183,57 @@ deskPositions.forEach((pos, index) => {
     }
   }, (err) => {
     console.error(`Desk ${index + 1} GLB load error:`, err);
+  });
+});
+
+// chair.glbの読み込みと配置
+const CHAIR_URL = new URL('./assets/chair.glb', import.meta.url).href;
+
+// 各机に2つずつ椅子を配置（机の長辺側に配置）
+const chairPositions = [
+  // 左側の机の椅子（長辺側）
+  { x: -1.3, y: 0, z: 0, rotation: Math.PI / 2 },    // 左机の左側
+  { x: -0.3, y: 0, z: 0, rotation: -Math.PI / 2 },  // 左机の右側
+  // 右側の机の椅子（長辺側）
+  { x: 0.3, y: 0, z: 0, rotation: Math.PI / 2 },     // 右机の左側
+  { x: 1.3, y: 0, z: 0, rotation: -Math.PI / 2 }    // 右机の右側
+];
+
+chairPositions.forEach((pos, index) => {
+  loader.load(CHAIR_URL, (gltf) => {
+    const chair = gltf.scene.clone();
+    
+    // 椅子のサイズを取得して調整
+    const chairBBox = new THREE.Box3().setFromObject(chair);
+    const chairSize = chairBBox.getSize(new THREE.Vector3());
+    
+    // カメラの高さの半分より少し高いくらいに調整（机と同じ）
+    const targetHeight = 0.7;
+    const currentHeight = chairSize.y;
+    const scale = targetHeight / currentHeight;
+    chair.scale.setScalar(scale);
+    
+    chair.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = true;
+        o.receiveShadow = true;
+        staticMeshes.push(o); // 衝突判定に追加
+      }
+    });
+    
+    // 位置設定
+    chair.position.set(pos.x, pos.y, pos.z);
+    chair.rotation.y = pos.rotation;
+    
+    scene.add(chair);
+    console.log(`Chair ${index + 1} loaded successfully`);
+  }, (e) => {
+    if (e && e.total) {
+      const p = (e.loaded / e.total * 100).toFixed(0);
+      console.log(`Loading chair.glb (${index + 1})… ${p}%`);
+    }
+  }, (err) => {
+    console.error(`Chair ${index + 1} GLB load error:`, err);
   });
 });
 
@@ -397,8 +450,8 @@ function animate() {
 
   // 4) カメラモードに応じた処理
   if (isFirstPerson) {
-    // 1人称視点: アバターの目の位置から見る
-    const eyeHeight = SPHERE_R * 1.5; // 目の高さ
+    // 1人称視点: アバターの頭の上から見る
+    const eyeHeight = SPHERE_R * 2.5; // 頭の上の高さ（より高い位置に）
     camera.position.set(
       avatar.position.x,
       avatar.position.y + eyeHeight,
