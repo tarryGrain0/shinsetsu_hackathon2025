@@ -18,8 +18,11 @@ scene.background = new THREE.Color(0xdfe7f1);
 // デバッグしやすいよう一旦フォグOFF（必要なら後で有効化）
 scene.fog = null;
 
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
 camera.position.set(0, 3, 8);
+
+// カメラモード（デフォルトは1人称視点）
+let isFirstPerson = true;
 
 // 三人称カメラのパラメータ
 let camYaw = 0.0;              // Y周り角（左右）
@@ -236,6 +239,7 @@ addEventListener('keydown', (e) => {
   if (!e.repeat) {
     if (e.code === 'KeyH') { helpersVisible = !helpersVisible; toggleHelpers(); }
     if (e.code === 'KeyR') { respawnAtCenter(); }
+    if (e.code === 'KeyV') { toggleCameraMode(); }
   }
   keys[e.code] = true;
 });
@@ -277,6 +281,15 @@ let firstFocus = true;
 function toggleHelpers() {
   if (bboxHelper) bboxHelper.visible = helpersVisible;
   avatarAxes.visible = helpersVisible;
+}
+
+function toggleCameraMode() {
+  isFirstPerson = !isFirstPerson;
+  const btn = document.getElementById('cameraToggle');
+  if (btn) {
+    btn.textContent = isFirstPerson ? '📷 3人称視点に切替' : '📷 1人称視点に切替';
+  }
+  firstFocus = true; // カメラ位置をリセット
 }
 
 function respawnAtCenter() {
@@ -322,16 +335,25 @@ const clock = new THREE.Clock();
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  // 1) カメラ方向ベクトル（水平面）
-  forward.set(Math.sin(camYaw), 0, Math.cos(camYaw));
-  right.set(Math.cos(camYaw), 0, -Math.sin(camYaw));
+  // 1) 方向ベクトルの計算
+  // 1人称視点時はアバターの向き、3人称視点時はカメラの向きを使用
+  if (isFirstPerson) {
+    // アバターの向きを基準にする
+    // W: 前進（顔の向き）、S: 後退、A: 左、D: 右
+    forward.set(Math.sin(avatarRotation), 0, Math.cos(avatarRotation));
+    right.set(Math.cos(avatarRotation), 0, -Math.sin(avatarRotation));
+  } else {
+    // カメラの向きを基準にする（従来通り）
+    forward.set(Math.sin(camYaw), 0, Math.cos(camYaw));
+    right.set(Math.cos(camYaw), 0, -Math.sin(camYaw));
+  }
 
-  // 2) 入力合成（WASD はカメラ基準）
+  // 2) 入力合成（WASD）
   const move = new THREE.Vector3();
-  if (keys['KeyW']) move.sub(forward);
-  if (keys['KeyS']) move.add(forward);
-  if (keys['KeyA']) move.sub(right);
-  if (keys['KeyD']) move.add(right);
+  if (keys['KeyW']) move.sub(forward);  // 前進（カメラ視点では逆）
+  if (keys['KeyS']) move.add(forward);  // 後退
+  if (keys['KeyA']) move.sub(right);    // 左
+  if (keys['KeyD']) move.add(right);    // 右
 
   const speed = (keys['ShiftLeft'] || keys['ShiftRight']) ? RUN : WALK;
   if (move.lengthSq() > 0) {
@@ -342,7 +364,7 @@ function animate() {
     avatar.position.addScaledVector(move, allowed);
   }
   
-  // 矢印キーでアバターを回転
+  // 矢印キーでアバターを回転（左右）、カメラピッチを調整（上下）
   if (keys['ArrowLeft']) {
     avatarRotation += ROTATION_SPEED * dt;
   }
@@ -350,6 +372,20 @@ function animate() {
     avatarRotation -= ROTATION_SPEED * dt;
   }
   avatar.rotation.y = avatarRotation;
+  
+  // 上下矢印キーでカメラの上下向きを調整
+  const PITCH_SPEED = 2.0; // カメラピッチの回転速度 (rad/s)
+  if (keys['ArrowUp']) {
+    camPitch += PITCH_SPEED * dt;  // 上を押したら上を向く
+  }
+  if (keys['ArrowDown']) {
+    camPitch -= PITCH_SPEED * dt;  // 下を押したら下を向く
+  }
+  
+  // 人間の首の可動域に合わせて制限（上方向60度、下方向50度）
+  const minPitch = Math.PI / 2 - (60 * Math.PI / 180); // 上限（見上げる）
+  const maxPitch = Math.PI / 2 + (50 * Math.PI / 180); // 下限（見下ろす）
+  camPitch = Math.max(minPitch, Math.min(maxPitch, camPitch));
 
   // 3) ジャンプ・重力 + 地面スナップ（GLB床）
   const gy = groundHeightAt(avatar.position.x, avatar.position.z);
@@ -359,25 +395,46 @@ function animate() {
   avatar.position.y += vY * dt;
   if (avatar.position.y < gy + SPHERE_R) { avatar.position.y = gy + SPHERE_R; vY = 0; }
 
-  // 4) 三人称カメラ（肩越し風） & 障害物で手前に寄せる
-  target.set(avatar.position.x, avatar.position.y + SPHERE_R * 0.8, avatar.position.z);
-  camOffset.setFromSpherical(new THREE.Spherical(camDist, camPitch, camYaw));
-  desiredCamPos.copy(target).add(camOffset);
+  // 4) カメラモードに応じた処理
+  if (isFirstPerson) {
+    // 1人称視点: アバターの目の位置から見る
+    const eyeHeight = SPHERE_R * 1.5; // 目の高さ
+    camera.position.set(
+      avatar.position.x,
+      avatar.position.y + eyeHeight,
+      avatar.position.z
+    );
+    
+    // アバターの向きに完全に固定（マウス操作は上下のみ影響）
+    // 180度回転させるため、符号を反転
+    const lookDir = new THREE.Vector3(
+      -Math.sin(avatarRotation),
+      Math.sin(camPitch - Math.PI / 2) * 0.8,
+      -Math.cos(avatarRotation)
+    );
+    const lookTarget = new THREE.Vector3().copy(camera.position).add(lookDir);
+    camera.lookAt(lookTarget);
+  } else {
+    // 3人称視点: 従来の肩越しカメラ
+    target.set(avatar.position.x, avatar.position.y + SPHERE_R * 0.8, avatar.position.z);
+    camOffset.setFromSpherical(new THREE.Spherical(camDist, camPitch, camYaw));
+    desiredCamPos.copy(target).add(camOffset);
 
-  // カメラ遮蔽回避
-  if (staticMeshes.length) {
-    const dirToCam = desiredCamPos.clone().sub(target).normalize();
-    ray.set(target, dirToCam);
-    const dist = desiredCamPos.distanceTo(target);
-    const hits = ray.intersectObjects(staticMeshes, true);
-    if (hits.length && hits[0].distance < dist) {
-      desiredCamPos.copy(target).addScaledVector(dirToCam, Math.max(0.3, hits[0].distance - 0.2));
+    // カメラ遮蔽回避
+    if (staticMeshes.length) {
+      const dirToCam = desiredCamPos.clone().sub(target).normalize();
+      ray.set(target, dirToCam);
+      const dist = desiredCamPos.distanceTo(target);
+      const hits = ray.intersectObjects(staticMeshes, true);
+      if (hits.length && hits[0].distance < dist) {
+        desiredCamPos.copy(target).addScaledVector(dirToCam, Math.max(0.3, hits[0].distance - 0.2));
+      }
     }
-  }
 
-  if (firstFocus) { camera.position.copy(desiredCamPos); firstFocus = false; }
-  else { camera.position.lerp(desiredCamPos, 0.18); }
-  camera.lookAt(target);
+    if (firstFocus) { camera.position.copy(desiredCamPos); firstFocus = false; }
+    else { camera.position.lerp(desiredCamPos, 0.18); }
+    camera.lookAt(target);
+  }
 
   // 5) レンダ＆FPS
   renderer.render(scene, camera);
@@ -395,6 +452,14 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+});
+
+// カメラ切り替えボタンのイベントリスナー
+document.addEventListener('DOMContentLoaded', () => {
+  const cameraBtn = document.getElementById('cameraToggle');
+  if (cameraBtn) {
+    cameraBtn.addEventListener('click', toggleCameraMode);
+  }
 });
 
 console.log('%cTIP', 'background:#34d399;color:#111;padding:2px 6px;border-radius:6px', 'ローカルHTTPサーバーで開いてください。例: `python3 -m http.server`');

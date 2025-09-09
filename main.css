@@ -49,3 +49,25 @@ body {
   font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   max-width: 60ch;
 }
+
+#cameraToggle {
+  position: fixed;
+  top: 60px;
+  left: 12px;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, .2);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: all 0.2s ease;
+}
+
+#cameraToggle:hover {
+  background: rgba(0, 0, 0, .7);
+  border-color: rgba(255, 255, 255, .4);
+  transform: scale(1.05);
+}
