@@ -133,6 +133,53 @@ const avatar = new THREE.Group(); // GLBを格納するグループ
 avatar.position.set(0, SPHERE_R, 0);
 scene.add(avatar);
 
+// desk.glbの読み込みと配置
+const DESK_URL = new URL('./assets/desk.glb', import.meta.url).href;
+
+// 2つのデスクを配置（中央に並べる）
+const deskPositions = [
+  { x: -0.8, y: 0, z: 0, rotation: 0 },      // 左側のデスク
+  { x: 0.8, y: 0, z: 0, rotation: 0 }        // 右側のデスク
+];
+
+deskPositions.forEach((pos, index) => {
+  loader.load(DESK_URL, (gltf) => {
+    const desk = gltf.scene.clone();
+    
+    // デスクのサイズを取得して調整
+    const deskBBox = new THREE.Box3().setFromObject(desk);
+    const deskSize = deskBBox.getSize(new THREE.Vector3());
+    
+    // アバターより小さくスケール調整（高さ0.3mくらいに）
+    const targetHeight = 0.3;
+    const currentHeight = deskSize.y;
+    const scale = targetHeight / currentHeight;
+    desk.scale.setScalar(scale);
+    
+    desk.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = true;
+        o.receiveShadow = true;
+        staticMeshes.push(o); // 衝突判定に追加
+      }
+    });
+    
+    // 位置設定（スケール後の高さを考慮）
+    desk.position.set(pos.x, pos.y, pos.z);
+    desk.rotation.y = pos.rotation;
+    
+    scene.add(desk);
+    console.log(`Desk ${index + 1} loaded successfully`);
+  }, (e) => {
+    if (e && e.total) {
+      const p = (e.loaded / e.total * 100).toFixed(0);
+      console.log(`Loading desk.glb (${index + 1})… ${p}%`);
+    }
+  }, (err) => {
+    console.error(`Desk ${index + 1} GLB load error:`, err);
+  });
+});
+
 // アバターGLBの読み込み
 const AVATAR_URL = new URL('./assets/avatar.glb', import.meta.url).href;
 loader.load(AVATAR_URL, (gltf) => {
