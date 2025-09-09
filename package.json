@@ -1,34 +1,34 @@
 {
-  "name": "shinsetsu-hackathon-2025",
-  "version": "1.0.0",
-  "description": "Three.jsを使用した3D空間探索アプリケーション",
-  "main": "index.html",
-  "scripts": {
-    "start": "python3 -m http.server 8080",
-    "dev": "python3 -m http.server 8080",
-    "serve": "python3 -m http.server 8080"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tarryGrain0/shinsetsu_hackathon2025.git"
-  },
-  "keywords": [
-    "threejs",
-    "3d",
-    "webgl",
-    "javascript",
-    "room-explorer",
-    "hackathon"
-  ],
-  "author": "Shinsetsu Hackathon 2025",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/tarryGrain0/shinsetsu_hackathon2025/issues"
-  },
-  "homepage": "https://tarryGrain0.github.io/shinsetsu_hackathon2025/",
-  "dependencies": {},
-  "devDependencies": {},
-  "engines": {
-    "node": ">=14.0.0"
-  }
+    "name": "shinsetsu-hackathon-2025",
+    "version": "1.0.0",
+    "description": "Three.jsを使用した3D空間探索アプリケーション",
+    "main": "index.html",
+    "scripts": {
+        "start": "python3 -m http.server 8080",
+        "dev": "python3 -m http.server 8080",
+        "serve": "python3 -m http.server 8080"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/tarryGrain0/shinsetsu_hackathon2025.git"
+    },
+    "keywords": [
+        "threejs",
+        "3d",
+        "webgl",
+        "javascript",
+        "room-explorer",
+        "hackathon"
+    ],
+    "author": "Shinsetsu Hackathon 2025",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/tarryGrain0/shinsetsu_hackathon2025/issues"
+    },
+    "homepage": "https://tarryGrain0.github.io/shinsetsu_hackathon2025/",
+    "dependencies": {},
+    "devDependencies": {},
+    "engines": {
+        "node": ">=14.0.0"
+    }
 }
