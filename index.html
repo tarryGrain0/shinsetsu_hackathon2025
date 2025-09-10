@@ -14,6 +14,7 @@
       <kbd>←→</kbd> アバター回転 / <kbd>↑↓</kbd> 視線上下 / マウス<strong>ドラッグ</strong>で視点回転 / <kbd>V</kbd> 視点切替 / <kbd>R</kbd> リスポーン / <kbd>H</kbd> ヘルパー切替</div>
   </div>
   <button id="cameraToggle">📷 3人称視点に切替</button>
+  <!-- <button id="cameraAngle" class="camera-angle-button" title="カメラアングル変更">📐</button> -->
   <button id="settingsBtn" class="settings-button" title="設定">⚙️</button>
   <div id="fps"></div>
   <div id="status">waiting for <code>room.glb</code>…</div>
@@ -95,6 +96,39 @@
       <div class="modal-footer">
         <button class="reset-btn" id="resetSettingsBtn">デフォルトに戻す</button>
         <button class="close-btn" id="closeModalBtn2">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 縦向き時の回転促進メッセージ -->
+  <div id="orientationMessage" class="orientation-message">
+    <div class="rotate-icon">📱↻</div>
+    <h2>画面を横向きにしてください</h2>
+    <p>最適なゲーム体験のため、デバイスを横向きにしてプレイしてください</p>
+  </div>
+
+  <!-- 横向き時のモバイルコントロール -->
+  <div id="mobileControls" class="mobile-controls-landscape">
+    <!-- 左手エリア（カメラジョイスティック） -->
+    <div class="left-controls">
+      <div id="cameraJoystickContainer">
+        <div id="cameraJoystickBase">
+          <div id="cameraJoystickKnob"></div>
+        </div>
+      </div>
+      <button id="mobileJumpBtn" class="action-btn jump-btn">JUMP</button>
+      <button id="mobileDashBtn" class="action-btn dash-btn">DASH</button>
+    </div>
+    
+    <!-- 中央カメラ操作エリア -->
+    <div id="cameraTouch" class="camera-touch-area"></div>
+    
+    <!-- 右手エリア（ジョイスティック） -->
+    <div class="right-controls">
+      <div id="joystickContainer">
+        <div id="joystickBase">
+          <div id="joystickKnob"></div>
+        </div>
       </div>
     </div>
   </div>

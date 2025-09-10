@@ -2,6 +2,7 @@ import * as THREE from 'https://esm.sh/three@0.160.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
 import { KTX2Loader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/KTX2Loader.js';
+import { initMobileControls, getMobileControls } from './mobile-controls.js';
 
 // --- Renderer ---
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -23,6 +24,16 @@ camera.position.set(0, 3, 8);
 
 // カメラモード（デフォルトは1人称視点）
 let isFirstPerson = true;
+
+// カメラアングルプリセット（一時的に無効化）
+// const CAMERA_ANGLES = [
+//   { name: '通常視点', pitch: Math.PI * 0.38, dist: 7.0 },
+//   { name: '俯瞰視点', pitch: Math.PI * 0.15, dist: 12.0 },
+//   { name: '近接視点', pitch: Math.PI * 0.45, dist: 4.0 },
+//   { name: '真上視点', pitch: Math.PI * 0.05, dist: 15.0 },
+//   { name: '肩越し視点', pitch: Math.PI * 0.42, dist: 5.0, yawOffset: 0.3 }
+// ];
+// let currentAngleIndex = 0;
 
 // 三人称カメラのパラメータ
 let camYaw = 0.0;              // Y周り角（左右）
@@ -198,6 +209,7 @@ addEventListener('keydown', (e) => {
     if (e.code === 'KeyH') { helpersVisible = !helpersVisible; toggleHelpers(); }
     if (e.code === 'KeyR') { respawnAtCenter(); }
     if (e.code === 'KeyV') { toggleCameraMode(); }
+    // if (e.code === 'KeyC') { switchCameraAngle(); } // 一時的に無効化
   }
   keys[e.code] = true;
 });
@@ -256,6 +268,22 @@ function toggleCameraMode() {
   firstFocus = true; // カメラ位置をリセット
 }
 
+// カメラアングル切り替え（一時的に無効化）
+// function switchCameraAngle() {
+//   if (isFirstPerson) return; // 1人称視点では切り替えない
+//   
+//   // シンプルなカメラ距離の切り替えのみ
+//   if (camDist < 10) {
+//     camDist = 12;
+//     camPitch = Math.PI * 0.25;
+//     console.log('Camera: Far view');
+//   } else {
+//     camDist = 7;
+//     camPitch = Math.PI * 0.38;
+//     console.log('Camera: Normal view');
+//   }
+// }
+
 function respawnAtCenter() {
   if (worldBBox) {
     const c = worldBBox.getCenter(new THREE.Vector3());
@@ -296,6 +324,9 @@ const fpsEl = document.getElementById('fps');
 let fpsAcc = 0, fpsFrames = 0, fpsTimer = 0;
 
 const clock = new THREE.Clock();
+
+// モバイルコントロール初期化
+const mobileControls = initMobileControls();
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
 
@@ -312,14 +343,46 @@ function animate() {
     right.set(Math.cos(camYaw), 0, -Math.sin(camYaw));
   }
 
-  // 2) 入力合成（WASD）
+  // 2) 入力合成（WASD + モバイル）
   const move = new THREE.Vector3();
-  if (keys['KeyW']) move.sub(forward);  // 前進（カメラ視点では逆）
-  if (keys['KeyS']) move.add(forward);  // 後退
-  if (keys['KeyA']) move.sub(right);    // 左
-  if (keys['KeyD']) move.add(right);    // 右
+  
+  // モバイルコントロールの入力を取得
+  let mobileInput = null;
+  if (mobileControls && mobileControls.enabled) {
+    mobileInput = mobileControls.getMovement();
+  }
+  
+  if (mobileInput) {
+    // モバイル入力を使用
+    // ジョイスティックの入力を移動ベクトルに変換
+    const joystickForward = new THREE.Vector3(0, 0, -1); // 前方向
+    const joystickRight = new THREE.Vector3(1, 0, 0);    // 右方向
+    
+    move.addScaledVector(joystickRight, mobileInput.move.x);
+    move.addScaledVector(joystickForward, mobileInput.move.y);
+    
+    // カメラ/アバター回転
+    if (mobileInput.cameraRotation.x !== 0) {
+      avatarRotation -= mobileInput.cameraRotation.x;
+    }
+    if (mobileInput.cameraRotation.y !== 0) {
+      camPitch -= mobileInput.cameraRotation.y;
+      camPitch = Math.max(minPitch, Math.min(maxPitch, camPitch));
+    }
+    
+    // ズーム
+    if (mobileInput.zoom !== 0) {
+      camDist = Math.min(camMaxDist, Math.max(camMinDist, camDist - mobileInput.zoom * 10));
+    }
+  } else {
+    // PC入力を使用
+    if (keys['KeyW']) move.sub(forward);  // 前進（カメラ視点では逆）
+    if (keys['KeyS']) move.add(forward);  // 後退
+    if (keys['KeyA']) move.sub(right);    // 左
+    if (keys['KeyD']) move.add(right);    // 右
+  }
 
-  const speed = (keys['ShiftLeft'] || keys['ShiftRight']) ? RUN : WALK;
+  const speed = (keys['ShiftLeft'] || keys['ShiftRight'] || (mobileInput && mobileInput.dash)) ? RUN : WALK;
   if (move.lengthSq() > 0) {
     move.normalize();
     // 壁当たりを簡易判定（前方レイ）
@@ -329,36 +392,55 @@ function animate() {
   }
   
   // 矢印キーでアバターを回転（左右）、カメラピッチを調整（上下）
-  if (keys['ArrowLeft']) {
-    avatarRotation += ROTATION_SPEED * dt;
-  }
-  if (keys['ArrowRight']) {
-    avatarRotation -= ROTATION_SPEED * dt;
+  // モバイルの場合はタッチで制御されるのでPC入力のみ処理
+  if (!mobileInput) {
+    if (keys['ArrowLeft']) {
+      avatarRotation += ROTATION_SPEED * dt;
+    }
+    if (keys['ArrowRight']) {
+      avatarRotation -= ROTATION_SPEED * dt;
+    }
   }
   avatar.rotation.y = avatarRotation;
   
   // 上下矢印キーでカメラの上下向きを調整
   const PITCH_SPEED = 2.0; // カメラピッチの回転速度 (rad/s)
-  if (keys['ArrowUp']) {
-    camPitch += PITCH_SPEED * dt;  // 上を押したら上を向く
-  }
-  if (keys['ArrowDown']) {
-    camPitch -= PITCH_SPEED * dt;  // 下を押したら下を向く
+  if (!mobileInput) {
+    if (keys['ArrowUp']) {
+      camPitch += PITCH_SPEED * dt;  // 上を押したら上を向く
+    }
+    if (keys['ArrowDown']) {
+      camPitch -= PITCH_SPEED * dt;  // 下を押したら下を向く
+    }
   }
   
   // 人間の首の可動域に合わせて制限（上方向60度、下方向50度）
   const minPitch = Math.PI / 2 - (60 * Math.PI / 180); // 上限（見上げる）
   const maxPitch = Math.PI / 2 + (50 * Math.PI / 180); // 下限（見下ろす）
-  camPitch = Math.max(minPitch, Math.min(maxPitch, camPitch));
+  
+  // モバイル入力での制限は既に適用済みなので、PC入力の場合のみ制限
+  if (!mobileInput) {
+    camPitch = Math.max(minPitch, Math.min(maxPitch, camPitch));
+  }
 
   // 3) ジャンプ・重力 + 地面スナップ（GLB床）
   const gy = groundHeightAt(avatar.position.x, avatar.position.z);
   const onGround = Math.abs(avatar.position.y - (gy + SPHERE_R)) < 1e-3;
-  if (keys['Space'] && onGround) vY = JUMP_V;
+  if ((keys['Space'] || (mobileInput && mobileInput.jump)) && onGround) vY = JUMP_V;
   vY -= GRAVITY * dt;
   avatar.position.y += vY * dt;
   if (avatar.position.y < gy + SPHERE_R) { avatar.position.y = gy + SPHERE_R; vY = 0; }
 
+  // モバイルコントロールからのカメラ回転
+  if (mobileControls && mobileControls.enabled && mobileControls.cameraJoystick) {
+    const cameraInput = mobileControls.cameraJoystick.vector;
+    if (cameraInput.x !== 0 || cameraInput.y !== 0) {
+      camYaw -= cameraInput.x;
+      camPitch += cameraInput.y;
+      camPitch = Math.max(0.05, Math.min(Math.PI * 0.95, camPitch));
+    }
+  }
+  
   // 4) カメラモードに応じた処理
   if (isFirstPerson) {
     // 1人称視点: アバターの頭の上から見る
@@ -381,6 +463,8 @@ function animate() {
   } else {
     // 3人称視点: 従来の肩越しカメラ
     target.set(avatar.position.x, avatar.position.y + SPHERE_R * 0.8, avatar.position.z);
+    
+    // カメラオフセットを適用
     camOffset.setFromSpherical(new THREE.Spherical(camDist, camPitch, camYaw));
     desiredCamPos.copy(target).add(camOffset);
 
@@ -406,9 +490,13 @@ function animate() {
   fpsAcc += 1 / dt; fpsFrames++; fpsTimer += dt;
   if (fpsTimer > 0.5) { fpsEl.textContent = (fpsAcc / fpsFrames).toFixed(0) + ' FPS'; fpsAcc = 0; fpsFrames = 0; fpsTimer = 0; }
 
+  // モバイル入力のリセット
+  if (mobileControls && mobileControls.enabled) {
+    mobileControls.resetFrameInputs();
+  }
+
   requestAnimationFrame(animate);
 }
-animate();
 animate();
 
 // --- Resize ---
@@ -424,6 +512,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (cameraBtn) {
     cameraBtn.addEventListener('click', toggleCameraMode);
   }
+  
+  // カメラアングルボタンのイベントリスナー（一時的に無効化）
+  // const angleBtn = document.getElementById('cameraAngle');
+  // if (angleBtn) {
+  //   angleBtn.addEventListener('click', switchCameraAngle);
+  // }
 });
 
 // --- 設定管理システム ---
