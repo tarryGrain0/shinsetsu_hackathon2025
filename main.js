@@ -76,12 +76,50 @@ loader.setKTX2Loader(ktx2);
 
 const ROOM_URL = new URL('./assets/room.glb', import.meta.url).href;
 
+// テクスチャローダー
+const textureLoader = new THREE.TextureLoader();
+
+// テクスチャの事前ロード
+const textures = {};
+const textureFiles = ['poster_1.jpg', 'poster_2.jpg'];
+
+// テクスチャを事前にロード
+textureFiles.forEach(filename => {
+  const materialName = filename.replace('.jpg', '');
+  const texturePath = new URL(`./assets/textures/${filename}`, import.meta.url).href;
+  textures[materialName] = textureLoader.load(texturePath, 
+    (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      console.log(`Texture loaded: ${filename}`);
+    },
+    undefined,
+    (error) => {
+      console.error(`Error loading texture ${filename}:`, error);
+    }
+  );
+});
+
 loader.load(ROOM_URL, (gltf) => {
   const room = gltf.scene;
+  
+  // マテリアルにテクスチャを適用
   room.traverse((o) => {
     if (o.isMesh) {
       o.castShadow = true; o.receiveShadow = true;
       staticMeshes.push(o);
+      
+      // マテリアル名をチェックしてテクスチャを適用
+      if (o.material && o.material.name) {
+        const materialName = o.material.name;
+        console.log(`Found material: ${materialName}`);
+        
+        // テクスチャが存在する場合は適用
+        if (textures[materialName]) {
+          console.log(`Applying texture to material: ${materialName}`);
+          o.material.map = textures[materialName];
+          o.material.needsUpdate = true;
+        }
+      }
     }
   });
   worldRoot.add(room);
