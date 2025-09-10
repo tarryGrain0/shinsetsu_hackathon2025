@@ -83,6 +83,13 @@ const textureLoader = new THREE.TextureLoader();
 const textures = {};
 const textureFiles = ['poster_1.jpg', 'poster_2.jpg'];
 
+// クリック可能なオブジェクトを追跡
+const clickableObjects = [];
+const clickableLinks = {
+  'poster_1': 'https://shinsetsu.hokkaido.jp/',
+  'poster_2': '#' // 必要に応じて別のリンクを設定
+};
+
 // テクスチャを事前にロード
 textureFiles.forEach(filename => {
   const materialName = filename.replace('.jpg', '');
@@ -118,6 +125,14 @@ loader.load(ROOM_URL, (gltf) => {
           console.log(`Applying texture to material: ${materialName}`);
           o.material.map = textures[materialName];
           o.material.needsUpdate = true;
+        }
+        
+        // クリック可能なポスターとして登録
+        if (clickableLinks[materialName]) {
+          clickableObjects.push(o);
+          o.userData.link = clickableLinks[materialName];
+          o.userData.materialName = materialName;
+          console.log(`Registered clickable object: ${materialName}`);
         }
       }
     }
@@ -261,16 +276,65 @@ addEventListener('keyup', (e) => {
 
 // マウスでカメラ回転
 let dragging = false; let lastX = 0, lastY = 0;
+// マウスイベント for カメラ操作
 addEventListener('mousedown', (e) => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
 addEventListener('mouseup', () => dragging = false);
 addEventListener('mouseleave', () => dragging = false);
+
+// クリックイベント for ポスター
+addEventListener('click', (e) => {
+  if (!worldLoaded || clickableObjects.length === 0) return;
+  
+  // マウス座標を正規化デバイス座標に変換
+  const mouse = new THREE.Vector2();
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  
+  // Raycasterを設定
+  const clickRay = new THREE.Raycaster();
+  clickRay.setFromCamera(mouse, camera);
+  
+  // クリック可能なオブジェクトとの交差判定
+  const intersects = clickRay.intersectObjects(clickableObjects, false);
+  
+  if (intersects.length > 0) {
+    const clickedObject = intersects[0].object;
+    const link = clickedObject.userData.link;
+    const materialName = clickedObject.userData.materialName;
+    
+    if (link && link !== '#') {
+      console.log(`Clicked on ${materialName}, opening: ${link}`);
+      window.open(link, '_blank');
+    }
+  }
+});
 addEventListener('mousemove', (e) => {
-  if (!dragging) return;
-  const dx = e.clientX - lastX; const dy = e.clientY - lastY;
-  lastX = e.clientX; lastY = e.clientY;
-  camYaw -= dx * 0.0035;           // 左右回転
-  camPitch -= dy * 0.0030;           // 上下回転
-  camPitch = Math.max(0.05, Math.min(Math.PI * 0.95, camPitch));
+  // カメラ回転処理
+  if (dragging) {
+    const dx = e.clientX - lastX; const dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    camYaw -= dx * 0.0035;           // 左右回転
+    camPitch -= dy * 0.0030;           // 上下回転
+    camPitch = Math.max(0.05, Math.min(Math.PI * 0.95, camPitch));
+  }
+  
+  // ホバー時のカーソル変更
+  if (worldLoaded && clickableObjects.length > 0 && !dragging) {
+    const mouse = new THREE.Vector2();
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    
+    const hoverRay = new THREE.Raycaster();
+    hoverRay.setFromCamera(mouse, camera);
+    
+    const intersects = hoverRay.intersectObjects(clickableObjects, false);
+    
+    if (intersects.length > 0) {
+      document.body.style.cursor = 'pointer';
+    } else {
+      document.body.style.cursor = 'default';
+    }
+  }
 });
 addEventListener('wheel', (e) => {
   camDist = Math.min(camMaxDist, Math.max(camMinDist, camDist + e.deltaY * 0.002));
